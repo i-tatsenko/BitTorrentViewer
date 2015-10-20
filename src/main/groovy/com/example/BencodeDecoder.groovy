@@ -1,4 +1,7 @@
 package com.example
+
+import java.security.MessageDigest
+
 /**
  * Created by Yasha on 14.10.2015.
  */
@@ -30,7 +33,12 @@ class BencodeDecoder {
         while (text[index] != 'e') {
             def key, value
             (key, index) = unwrapString(text, index)
+            def valueStartIndex = index
             (value, index) = getValue(text, index)
+            if (key == 'info') {
+                def infoBytes = text.substring(valueStartIndex, index).bytes
+                MessageDigest.getInstance('SHA1').digest(infoBytes)
+            }
             result.put key, value
         }
         return [result, index + 1]
