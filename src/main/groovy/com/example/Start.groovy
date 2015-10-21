@@ -1,27 +1,36 @@
 package com.example
 
+import com.squareup.okhttp.HttpUrl
+import com.squareup.okhttp.OkHttpClient
+import com.squareup.okhttp.Request
 import org.apache.commons.codec.net.URLCodec
 
-def map = new BencodeDecoder().decode(new File('D:\\Castle.S08E01.rus.LostFilm.TV.avi (2).torrent'))
+def map = new BencodeDecoder().decode(new File('F:\\Downloads\\[rutracker.org].t5095200.torrent'))
 map.info.remove 'pieces'
 println map
 
-def params = ""
-use(Util) {
-    params = params.appendProperty("info_hash", map.info_hash)
-            .appendProperty("peer_id", generatePeerId())
-            .appendProperty("key", generateKey())
-            .appendProperty("port", "21412")
-            .appendProperty("no_peer_id", '1')
-            .appendProperty("uploaded", "0")
-            .appendProperty("downloaded", "0")
-            .appendProperty("left", map.info.length as String)
-            .appendProperty("event", "started")
-}
-def response = (map.announce + "?$params" as String).toURL().bytes
-println "response: " + new String(response, 'ASCII')
-def decoded = new BencodeDecoder().decode(response)
-decoded.remove('peers')
+
+def url = new HttpUrl.Builder()
+.host(map.announce as String)
+
+        .addEncodedQueryParameter("info_hash", new String(new URLCodec().encode(map.info_hash as byte[])))
+        .addQueryParameter("peer_id", generatePeerId())
+        .addQueryParameter("key", generateKey())
+        .addQueryParameter("port", "21412")
+        .addQueryParameter("no_peer_id", '1')
+        .addQueryParameter("uploaded", "0")
+        .addQueryParameter("downloaded", "0")
+        .addQueryParameter("left", map.info.length as String)
+        .addQueryParameter("event", "started")
+        .build()
+
+def request = new Request.Builder()
+        .url(url)
+        .get()
+        .build()
+println new OkHttpClient().newCall(request).execute().body().toString()
+
+
 println decoded
 
 
