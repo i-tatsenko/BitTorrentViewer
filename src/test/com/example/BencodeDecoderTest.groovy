@@ -11,7 +11,7 @@ class BencodeDecoderTest extends Specification {
 
     def 'unwrap string'() {
         expect:
-        decoder.unwrapString(text, 0) == [string, newIndex]
+        decoder.unwrapString(text.bytes, 0) == [string, newIndex]
 
         where:
         text                     | string                | newIndex
@@ -22,7 +22,7 @@ class BencodeDecoderTest extends Specification {
 
     def unwrapInt() {
         expect:
-        decoder.unwrapInt(text, 0) == [integer, index]
+        decoder.unwrapInt(text.bytes, 0) == [integer, index]
 
         where:
         text   | integer | index
@@ -32,7 +32,7 @@ class BencodeDecoderTest extends Specification {
 
     def unwrapList() {
         expect:
-        decoder.unwrapList(text, 0) == [resultList, index]
+        decoder.unwrapList(text.bytes, 0) == [resultList, index]
 
         where:
         text                   | resultList                | index
@@ -42,7 +42,7 @@ class BencodeDecoderTest extends Specification {
 
     def unwrapMap() {
         expect:
-        decoder.unwrapMap(text, 0) == [resultMap, index]
+        decoder.unwrapMap(text.bytes, 0) == [resultMap, index]
 
         where:
         text              | resultMap                                  | index
