@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.model.BString
+
 import java.security.MessageDigest
 
 import static com.example.Util.sub
@@ -25,10 +27,16 @@ class BencodeDecoder {
     }
 
     def unwrapString(byte[] bytes, int index) {
+        def result, i
+        (result, i) = unwrapBString(bytes, index)
+        [result.toString(), i]
+    }
+
+    def unwrapBString(byte[] bytes, int index) {
         def indexOfColon = bytes.findIndexOf(index, {it == ':'.bytes[0]})
         int stringLength = subAndTransform(bytes, index, indexOfColon, {new String(it as byte[]).toBigInteger()})
         def stringStartIndex = indexOfColon + 1
-        def resultString = subAndTransform(bytes, stringStartIndex, stringStartIndex + stringLength, {new String(it)})
+        def resultString = subAndTransform(bytes, stringStartIndex, stringStartIndex + stringLength, {new BString(bytes: it)})
         return [resultString, stringStartIndex + stringLength]
     }
 
@@ -72,7 +80,7 @@ class BencodeDecoder {
         } else if (bytes[index] == 'i'.bytes[0]) {
             return unwrapInt(bytes, ++index)
         }
-        return unwrapString(bytes, index)
+        return unwrapBString(bytes, index)
 
     }
 }

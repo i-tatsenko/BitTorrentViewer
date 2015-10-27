@@ -9,4 +9,5 @@ dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.4.5'
     compile 'commons-codec:commons-codec:1.10'
     compile 'com.squareup.okhttp:okhttp:2.5.0'
+    compile 'org.codehaus.gpars:gpars:1.2.1'
 }

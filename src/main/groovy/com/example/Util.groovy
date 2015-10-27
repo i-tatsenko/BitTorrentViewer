@@ -1,11 +1,18 @@
 package com.example
 
-import org.apache.commons.codec.net.URLCodec
+import com.squareup.okhttp.HttpUrl
 
 /**
  * Created by Yasha on 21.10.2015.
  */
 class Util {
+
+    static Random random = new Random()
+    static char[] dictionary = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890".toCharArray()
+
+    static def <T> T subAndTransform(byte[] array, int start, int end, Closure<T> transformer) {
+        transformer sub(array, start, end)
+    }
 
     static byte[] sub(byte[] array, int start, int end) {
         def resultArray = new byte[end - start]
@@ -13,19 +20,25 @@ class Util {
         return resultArray
     }
 
-    static def <T> T subAndTransform(byte[] array, int start, int end, Closure<T> transformer) {
-        transformer sub(array, start, end)
-    }
-
-    static def appendProperty(String self, String key, byte[] value) {
-        if (!self.isEmpty()) {
-            self += "&"
+    static HttpUrl.Builder announceToBuilder(def announce) {
+        def uri = new URI(announce as String)
+        def builder = new HttpUrl.Builder()
+                .scheme(uri.scheme)
+                .host(uri.host)
+        uri.path.split(/\//).each { builder.addEncodedPathSegment(it) }
+        uri.query?.split(/&/)?.each {
+            def pair = it.split('=')
+            builder.addEncodedQueryParameter(pair[0], pair[1])
         }
-        self + "$key=${new String(new URLCodec().encode(value))}"
+        builder
     }
 
-    static def appendProperty(String self, String key, String value) {
-        appendProperty self, key, value.bytes
+    static def randomString(int length) {
+        def chars = new char[length]
+        (0..(length - 1)).each {
+            chars[it] = dictionary[random.nextInt(dictionary.length)]
+        }
+        return new String(chars)
     }
 
 }
