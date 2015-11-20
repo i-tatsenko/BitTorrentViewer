@@ -1,4 +1,4 @@
-package com.example
+package cf.docent.bittorrent
 
 import com.squareup.okhttp.HttpUrl
 
@@ -25,6 +25,7 @@ class Util {
         def builder = new HttpUrl.Builder()
                 .scheme(uri.scheme)
                 .host(uri.host)
+                .port(portFromUri(uri))
         uri.path.split(/\//).each { builder.addEncodedPathSegment(it) }
         uri.query?.split(/&/)?.each {
             def pair = it.split('=')
@@ -33,12 +34,27 @@ class Util {
         builder
     }
 
+    private static int portFromUri(URI uri) {
+        if (uri.port > 0) {
+            return uri.port
+        }
+        switch (uri.scheme) {
+            case 'http': return 80
+            case 'https': return 443
+        }
+        return uri.port
+    }
+
     static def randomString(int length) {
         def chars = new char[length]
         (0..(length - 1)).each {
             chars[it] = dictionary[random.nextInt(dictionary.length)]
         }
         return new String(chars)
+    }
+
+    static def twoBytesToInt(byte[] b) {
+        return ((b[0] & 0xFF) << 8) + (b[1] & 0xFF)
     }
 
 }

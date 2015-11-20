@@ -1,29 +1,28 @@
-package com.example
-
-import com.example.model.BString
+package cf.docent.bittorrent.protocol.bencode
 
 import java.security.MessageDigest
 
-import static com.example.Util.sub
-import static com.example.Util.subAndTransform
+import static cf.docent.bittorrent.Util.sub
+import static cf.docent.bittorrent.Util.subAndTransform
 
 /**
  * Created by Yasha on 14.10.2015.
  */
-class BencodeDecoder {
+class SimpleBencodeDecoder implements BencodeDecoder {
+
+
+    public static final byte END_BYTE = 'e'.bytes[0]
+    public static final byte DICTIONARY_START_BYTE = 'd'.bytes[0]
+    public static final byte LIST_START_BYTE = 'l'.bytes[0]
+    public static final byte INTEGER_START_BYTE = 'i'.bytes[0]
 
     def decode(byte[] bytes) {
-        if (bytes[0] != 'd'.bytes[0]) {
+        if (bytes[0] != DICTIONARY_START_BYTE) {
             throw new IllegalArgumentException("Unknown format of torrent file")
         }
         def map, index
         (map, index) = getValue(bytes, 0)
         return map
-    }
-
-    def decode(File torrentFile) {
-        def encodedBytes = torrentFile.bytes
-        decode(encodedBytes)
     }
 
     def unwrapString(byte[] bytes, int index) {
@@ -42,7 +41,7 @@ class BencodeDecoder {
 
     def unwrapMap(byte[] text, int index) {
         def result = [:]
-        while (text[index] != 'e'.bytes[0]) {
+        while (text[index] != END_BYTE) {
             def key, value
             (key, index) = unwrapString(text, index)
             def valueStartIndex = index
@@ -59,7 +58,7 @@ class BencodeDecoder {
 
     def unwrapList(byte[] text, int index) {
         def list = []
-        while (text[index] != 'e'.bytes[0]) {
+        while (text[index] != END_BYTE) {
             def value
             (value, index) = getValue(text, index)
             list << value
@@ -68,16 +67,16 @@ class BencodeDecoder {
     }
 
     def unwrapInt(byte[] text, int index) {
-        def endIndex = text.findIndexOf(index, {it == 'e'.bytes[0]})
+        def endIndex = text.findIndexOf(index, {it == END_BYTE })
         return [subAndTransform(text, index, endIndex, {new String(it).toBigInteger()}), endIndex + 1]
     }
 
     def getValue(byte[] bytes, int index) {
-        if (bytes[index] == 'd'.bytes[0]) {
+        if (bytes[index] == DICTIONARY_START_BYTE) {
             return unwrapMap(bytes, ++index)
-        } else if (bytes[index] == 'l'.bytes[0]) {
+        } else if (bytes[index] == LIST_START_BYTE) {
             return unwrapList(bytes, ++index)
-        } else if (bytes[index] == 'i'.bytes[0]) {
+        } else if (bytes[index] == INTEGER_START_BYTE) {
             return unwrapInt(bytes, ++index)
         }
         return unwrapBString(bytes, index)

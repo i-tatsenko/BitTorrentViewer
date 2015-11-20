@@ -1,13 +1,15 @@
 package com.example
 
+import cf.docent.bittorrent.Util
+import cf.docent.bittorrent.protocol.bencode.SimpleBencodeDecoder
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import groovyx.gpars.GParsPool
 import org.apache.commons.codec.net.URLCodec
 
-//def map = new BencodeDecoder().decode(new File('D:\\Castle.S08E01.rus.LostFilm.TV.avi (2).torrent'))
-//def map = new BencodeDecoder().decode(new File('D:\\[rutracker.org].t5094912.torrent'))
-def map = new BencodeDecoder().decode(new File('D:\\The.Originals.S03E01.rus.LostFilm.TV.avi (1).torrent'))
+//def map = new SimpleBencodeDecoder().decode(new File('D:\\Castle.S08E01.rus.LostFilm.TV.avi (2).torrent'))
+//def map = new SimpleBencodeDecoder().decode(new File('D:\\[rutracker.org].t5094912.torrent'))
+def map = new SimpleBencodeDecoder().decode(new File('D:\\The.Originals.S03E01.rus.LostFilm.TV.avi (1).torrent'))
 map.info.remove 'pieces'
 println map
 
@@ -31,7 +33,7 @@ def request = new Request.Builder()
 println "Asking tracker about peers. URI: ${request.toString()}"
 def response = new OkHttpClient().newCall(request).execute()
 println "Response from tracker, code: ${response.code()}"
-def decodedResponse = new BencodeDecoder().decode(response.body().bytes())
+def decodedResponse = new SimpleBencodeDecoder().decode(response.body().bytes())
 List peers = decodedResponse.peers.toNetDestinations()
 println "Server said us about ${peers.size()} peers"
 GParsPool.withPool 20, {

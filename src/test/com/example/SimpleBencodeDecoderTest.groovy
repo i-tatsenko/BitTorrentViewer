@@ -1,13 +1,14 @@
 package com.example
 
+import cf.docent.bittorrent.protocol.bencode.SimpleBencodeDecoder
 import spock.lang.Specification
 
 /**
  * Created by Yasha on 14.10.2015.
  */
-class BencodeDecoderTest extends Specification {
+class SimpleBencodeDecoderTest extends Specification {
 
-    def decoder = new BencodeDecoder()
+    def decoder = new SimpleBencodeDecoder()
 
     def 'unwrap string'() {
         expect:
