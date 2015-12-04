@@ -1,6 +1,8 @@
 package cf.docent.bittorrent
 
+import cf.docent.bittorrent.conf.Configuration
 import cf.docent.bittorrent.protocol.bencode.SimpleBencodeDecoder
+import cf.docent.bittorrent.protocol.peer.PeerManager
 import cf.docent.bittorrent.protocol.tracker.PeerResponse
 import cf.docent.bittorrent.protocol.tracker.Tracker
 
@@ -12,10 +14,13 @@ class Torrent {
     TorrentData torrentData
     PeerResponse peerResponse
     def fileList = []
+    private PeerManager peerManager
 
-    Torrent(File torrentMetaFile, Tracker tracker) {
+    Torrent(File torrentMetaFile, Tracker tracker, Configuration configuration) {
         torrentData = new TorrentData(torrentMetaFile, new SimpleBencodeDecoder())
         peerResponse = tracker.requestPeers(torrentData)
+        peerManager = new PeerManager(configuration, this)
+        peerManager.connectPeersList(peerResponse.seeds)
     }
 
     List<TorrentFile> listTorrentFiles(){
@@ -28,6 +33,10 @@ class Torrent {
 
     def getLeechersCount() {
         return peerResponse?.leechersCount()
+    }
+
+    def infoHash() {
+        torrentData.infoHash
     }
 
     @Override

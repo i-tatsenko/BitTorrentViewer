@@ -1,6 +1,10 @@
 package cf.docent.bittorrent.protocol.peer
-import cf.docent.bittorrent.TorrentChunkListener
 import cf.docent.bittorrent.protocol.NetDestination
+import cf.docent.bittorrent.protocol.peer.handler.PeerMessageDecoder
+import cf.docent.bittorrent.protocol.peer.handler.PeerMessageInboundHandler
+import cf.docent.bittorrent.protocol.peer.handler.PeerMessageOutboundHandler
+import cf.docent.bittorrent.protocol.peer.handler.SimpleExceptionChannelHandler
+import cf.docent.bittorrent.protocol.peer.message.PeerMessageFactory
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
@@ -8,32 +12,32 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioSocketChannel
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-/**
- * Created by docent on 17.11.15.
- */
-class SeedConnection {
 
-    private static final Logger LOGGER = LogManager.getLogger(SeedConnection)
+class PeerConnection implements PeerMessageListener {
 
+    private static final Logger LOGGER = LogManager.getLogger(PeerConnection)
+    private PeerMessageListener peerMessageListener
 
     final NetDestination destination
-    TorrentChunkListener torrentChunkListener
-    volatile int partsCompleted
     volatile ConnectionStatus connectionStatus = ConnectionStatus.CONNECTING
     private PeerConnectionStatusListener connectionEventListener
     private NioEventLoopGroup eventGroup = new NioEventLoopGroup()
     private Channel channel
 
-    private SeedConnection(NetDestination netDestination, TorrentChunkListener torrentChunkListener, PeerConnectionStatusListener connectionEventListener) {
+    private PeerConnection(NetDestination netDestination, PeerConnectionStatusListener connectionEventListener) {
         this.connectionEventListener = connectionEventListener
-        this.torrentChunkListener = torrentChunkListener
         this.destination = netDestination
     }
 
-    public static SeedConnection connect(NetDestination netDestination, TorrentChunkListener chunkListener, PeerConnectionStatusListener connectionEventListener) {
-        def connection = new SeedConnection(netDestination, chunkListener, connectionEventListener)
+    public static PeerConnection connect(NetDestination netDestination, PeerConnectionStatusListener connectionEventListener, PeerMessageListener peerMessageListener) {
+        def connection = new PeerConnection(netDestination, connectionEventListener)
+        connection.peerMessageListener = peerMessageListener
         connection.connectToPeer()
         return connection
+    }
+
+    def sendToPeer(PeerMessage peerMessage) {
+        channel.writeAndFlush(peerMessage)
     }
 
     private def connectToPeer() {
@@ -41,7 +45,11 @@ class SeedConnection {
         bootstrap.group(eventGroup)
         bootstrap.channel(NioSocketChannel)
         bootstrap.handler(new SimpleExceptionChannelHandler(this.&close))
+
         def channelFuture = bootstrap.connect(destination.address, destination.port)
+        def pipeline = channelFuture.channel().pipeline()
+        pipeline.addLast(new PeerMessageOutboundHandler(), new PeerMessageDecoder(new PeerMessageFactory()), new PeerMessageInboundHandler(messageListener: this))
+
         channelFuture.addListener { connectionFuture ->
             if (connectionFuture.success) {
                 processSuccessfulConnection(channelFuture)
@@ -49,12 +57,11 @@ class SeedConnection {
                 processFailedConnection(channelFuture.cause())
             }
         }
-
     }
 
     private def processSuccessfulConnection(ChannelFuture channelFuture) {
-        changeConnectionStatus(ConnectionStatus.CONNECTED)
         channel = channelFuture.channel()
+        changeConnectionStatus(ConnectionStatus.CONNECTED)
     }
 
     private def processFailedConnection(Throwable cause) {
@@ -82,5 +89,10 @@ class SeedConnection {
     @Override
     String toString() {
         return "Seed connection:{$destination status: $connectionStatus}"
+    }
+
+    @Override
+    def onMessage(PeerMessage peerMessage) {
+        peerMessageListener.onMessage(peerMessage)
     }
 }

@@ -1,4 +1,4 @@
-package cf.docent.bittorrent.protocol.peer
+package cf.docent.bittorrent.protocol.peer.handler
 
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
@@ -15,6 +15,8 @@ class SimpleExceptionChannelHandler extends ChannelInitializer<SocketChannel> {
     public SimpleExceptionChannelHandler(Closure onFatalException) {
         fatalExceptionHandler = onFatalException
     }
+
+
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
