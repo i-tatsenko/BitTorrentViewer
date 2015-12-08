@@ -9,8 +9,22 @@ trait PeerMessage {
 
     abstract byte[] getMessageBytes()
 
-    int intFromBytes() {
-        ByteBuffer.wrap(messageBytes).getInt()
+    abstract byte getMessageId()
+
+    int readFirstInt() {
+        readInt(0)
+    }
+
+    int readInt(int position) {
+        ByteBuffer.wrap(messageBytes).getInt(position * Integer.BYTES)
+    }
+
+    byte[] serialize() {
+        ByteBuffer result = ByteBuffer.allocate(4 + 1 + messageBytes.length)
+        result.putInt(messageBytes.length + 1)
+        result.put(messageId)
+        result.put(messageBytes)
+        result.array()
     }
 
     @Override

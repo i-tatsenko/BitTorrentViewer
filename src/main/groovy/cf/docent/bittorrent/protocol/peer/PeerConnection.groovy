@@ -5,6 +5,7 @@ import cf.docent.bittorrent.protocol.peer.handler.PeerMessageInboundHandler
 import cf.docent.bittorrent.protocol.peer.handler.PeerMessageOutboundHandler
 import cf.docent.bittorrent.protocol.peer.handler.SimpleExceptionChannelHandler
 import cf.docent.bittorrent.protocol.peer.message.PeerMessageFactory
+import groovy.transform.PackageScope
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
@@ -13,6 +14,7 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
+@PackageScope
 class PeerConnection implements PeerMessageListener {
 
     private static final Logger LOGGER = LogManager.getLogger(PeerConnection)

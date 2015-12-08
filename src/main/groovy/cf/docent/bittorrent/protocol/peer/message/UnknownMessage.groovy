@@ -3,9 +3,9 @@ package cf.docent.bittorrent.protocol.peer.message
 import cf.docent.bittorrent.protocol.peer.PeerMessage
 
 /**
- * Created by docent on 01.12.15.
+ * Created by docent on 05.12.15.
  */
-class UnchokeMessage implements PeerMessage {
+class UnknownMessage implements PeerMessage {
 
     @Override
     byte[] getMessageBytes() {
@@ -14,6 +14,11 @@ class UnchokeMessage implements PeerMessage {
 
     @Override
     byte getMessageId() {
-        return 1
+        return -1
+    }
+
+    @Override
+    byte[] serialize() {
+        throw new UnsupportedOperationException()
     }
 }

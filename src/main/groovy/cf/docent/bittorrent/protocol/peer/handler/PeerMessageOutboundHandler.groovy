@@ -18,7 +18,7 @@ class PeerMessageOutboundHandler extends ChannelOutboundHandlerAdapter {
             throw new IllegalArgumentException("Can't send object of type ${msg.class} to peer")
         }
         ByteBuf byteBuf = ctx.alloc().buffer(msg.messageBytes.length)
-        byteBuf.writeBytes(msg.messageBytes)
+        byteBuf.writeBytes(msg.serialize())
         ctx.writeAndFlush(byteBuf, promise)
         LOGGER.debug("Sending $msg to peer")
     }

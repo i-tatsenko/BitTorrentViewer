@@ -13,4 +13,9 @@ public class BitFieldMessage implements PeerMessage {
     public byte[] getMessageBytes() {
         return bytes
     }
+
+    @Override
+    byte getMessageId() {
+        return 5
+    }
 }

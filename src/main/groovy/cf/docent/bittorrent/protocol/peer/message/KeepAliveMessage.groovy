@@ -20,6 +20,16 @@ class KeepAliveMessage implements PeerMessage {
         return ZERO_BYTES.clone()
     }
 
+    @Override
+    byte getMessageId() {
+        return -1
+    }
+
+    @Override
+    byte[] serialize() {
+        return new byte[4]
+    }
+
     public static boolean isKeepAliveMessage(byte[] bytes) {
         (0..3).each {
             if (bytes[it] != 0) {

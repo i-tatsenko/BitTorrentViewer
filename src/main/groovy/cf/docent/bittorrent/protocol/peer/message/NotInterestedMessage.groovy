@@ -11,4 +11,9 @@ class NotInterestedMessage implements PeerMessage {
     byte[] getMessageBytes() {
         return new byte[0]
     }
+
+    @Override
+    byte getMessageId() {
+        return 3
+    }
 }

@@ -11,7 +11,7 @@ public class TorrentManager {
     Configuration configuration = new Configuration()
 
     Torrent addTorrent(File torrentFile) {
-        return new Torrent(torrentFile, new Tracker(configuration), configuration)
+        return new Torrent(torrentFile, new Tracker(configuration))
     }
 
 }

@@ -7,17 +7,8 @@ import cf.docent.bittorrent.Util
  */
 class Configuration {
 
-    String getPeerId() {
-        def peerId = Util.randomString(20)
-        println "Peer id $peerId length ${peerId.length()}"
-        return peerId.toString()
-    }
+    def peerId = Util.randomString(20)
+    String keyId = Util.randomString(9)
+    int listeningPort = 12312
 
-    String getKeyId() {
-        Util.randomString(9)
-    }
-
-    int getListeningPort() {
-        return 12312
-    }
 }

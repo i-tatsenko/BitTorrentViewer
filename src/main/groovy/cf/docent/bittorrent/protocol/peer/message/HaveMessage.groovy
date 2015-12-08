@@ -16,7 +16,12 @@ class HaveMessage implements PeerMessage {
     }
 
     @Override
+    byte getMessageId() {
+        return 4
+    }
+
+    @Override
     String toString() {
-        "HaveMessage for index #${intFromBytes()}"
+        "HaveMessage for index #${readFirstInt()}"
     }
 }

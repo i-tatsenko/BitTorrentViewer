@@ -44,6 +44,16 @@ class HandShakeMessage implements PeerMessage {
     }
 
     @Override
+    byte[] serialize() {
+        return messageBytes
+    }
+
+    @Override
+    byte getMessageId() {
+        return -1
+    }
+
+    @Override
     String toString() {
         return "HandshakePeerMessage"
     }

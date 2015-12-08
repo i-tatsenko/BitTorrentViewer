@@ -15,7 +15,9 @@ class PeerMessageFactory {
             case 3 : return new NotInterestedMessage()
             case 4 : return new HaveMessage(bytes)
             case 5 : return new BitFieldMessage(bytes: bytes)
+            case 7 : return new PieceMessage(bytes: bytes)
         }
+        return new UnknownMessage()
     }
 
 }

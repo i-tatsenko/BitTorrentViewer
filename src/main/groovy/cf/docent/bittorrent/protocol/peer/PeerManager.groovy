@@ -2,45 +2,47 @@ package cf.docent.bittorrent.protocol.peer
 
 import cf.docent.bittorrent.Torrent
 import cf.docent.bittorrent.conf.Configuration
-import cf.docent.bittorrent.protocol.NetDestination
-import cf.docent.bittorrent.protocol.peer.message.HandShakeMessage
 import io.netty.util.internal.ConcurrentSet
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-class PeerManager implements PeerConnectionStatusListener {
+class PeerManager implements PeerStatusListener {
 
-    private static final Logger LOGGER = LogManager.getLogger()
+    private static final Logger LOGGER = LogManager.getLogger(PeerManager)
 
-    Set<PeerConnection> connectedPeers = new ConcurrentSet<>()
-    Set<PeerConnection> failedPeers = new ConcurrentSet<>()
-    Set<PeerConnection> disconnectedPeers = new ConcurrentSet<>()
+    Set<Peer> connectedPeers = new ConcurrentSet<>()
+    Set<Peer> failedPeers = new ConcurrentSet<>()
+    Set<Peer> disconnectedPeers = new ConcurrentSet<>()
     byte[] peerId
     byte[] infoHash
+    private Torrent torrent
 
     public PeerManager(Configuration configuration, Torrent torrent) {
+        this.torrent = torrent
         peerId = configuration.peerId.bytes
         infoHash = torrent.infoHash()
     }
 
-    def connectPeersList(List<NetDestination> destinations){
-        destinations.each {Peer.connect(it, this)}
+    def connectPeers() {
+        torrent.seeds
+                .findAll { !connectedPeers.contains(it) }
+                .forEach { Peer.connect(it, this) }
     }
 
     @Override
-    void statusChanged(ConnectionStatus old, ConnectionStatus newStatus, PeerConnection seedConnection) {
+    def statusChanged(Peer peer, ConnectionStatus old, ConnectionStatus newStatus) {
         if (newStatus == ConnectionStatus.CONNECTED) {
-            connectedPeers << seedConnection
-            LOGGER.debug("Connected to ${seedConnection.destination}")
-            seedConnection.sendToPeer(new HandShakeMessage(infoHash, peerId))
+            connectedPeers << peer
+            LOGGER.debug("Connected to ${peer.destination}")
+            peer.sendHandshake(infoHash, peerId)
         }
         if (newStatus == ConnectionStatus.DISCONNECTED) {
-            connectedPeers.remove(seedConnection)
-            disconnectedPeers << seedConnection
+            connectedPeers.remove(peer)
+            disconnectedPeers << peer
         }
         if (newStatus == ConnectionStatus.CONNECTION_FAILED) {
-            connectedPeers.remove(seedConnection)
-            failedPeers << seedConnection
+            connectedPeers.remove(peer)
+            failedPeers << peer
         }
     }
 }

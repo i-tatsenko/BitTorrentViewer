@@ -1,4 +1,8 @@
 package cf.docent.bittorrent
+
+import cf.docent.bittorrent.conf.Configuration
+import cf.docent.bittorrent.protocol.peer.PeerManager
+
 /**
  * Created by docent on 18.11.15.
  */
@@ -8,6 +12,8 @@ def torrent = torrentManager.addTorrent(new File("/Users/docent/Downloads/[rutra
 //def torrent = torrentManager.addTorrent(new File("/Users/docent/Downloads/ubuntu-15.10-desktop-amd64.iso.torrent"))
 //def torrent = torrentManager.addTorrent(new File("/Users/docent/Downloads/[rutor.org]3B3P3Ct.2015.D.WEB-DL.720p.mkv.torrent"))
 println torrent
+
+new PeerManager(new Configuration(), torrent).connectPeers()
 
 
 
