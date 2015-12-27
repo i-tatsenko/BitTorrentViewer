@@ -1,8 +1,6 @@
-package com.example
+package cf.docent.bittorrent.protocol.bencode
 
-import cf.docent.bittorrent.protocol.bencode.SimpleBencodeDecoder
 import spock.lang.Specification
-
 /**
  * Created by Yasha on 14.10.2015.
  */

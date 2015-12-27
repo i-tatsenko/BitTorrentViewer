@@ -11,11 +11,11 @@ class RequestMessage implements PeerMessage {
 
     byte[] bytes
 
-    RequestMessage(int pieceIndex, int offset, int length) {
-        def result = ByteBuffer.allocate(3 * 4)
-        result.putInt(pieceIndex)
-        result.putInt(offset)
-        result.putInt(length)
+    RequestMessage(long pieceIndex, long offset, long length) {
+        def result = ByteBuffer.allocate(12)
+        result.putInt(pieceIndex.intValue())
+        result.putInt(offset.intValue())
+        result.putInt(length.intValue())
         bytes = result.array()
     }
 

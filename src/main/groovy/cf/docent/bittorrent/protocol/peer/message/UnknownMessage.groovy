@@ -7,9 +7,16 @@ import cf.docent.bittorrent.protocol.peer.PeerMessage
  */
 class UnknownMessage implements PeerMessage {
 
+    private byte[] bytes
+
+    UnknownMessage(byte[] bytes) {
+
+        this.bytes = bytes
+    }
+
     @Override
     byte[] getMessageBytes() {
-        return new byte[0]
+        return bytes
     }
 
     @Override

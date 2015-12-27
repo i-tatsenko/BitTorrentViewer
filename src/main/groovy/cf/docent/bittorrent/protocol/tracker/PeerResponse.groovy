@@ -18,7 +18,6 @@ class PeerResponse {
     LocalTime nextUpdate
 
     PeerResponse(def decodedData) {
-        LOGGER.debug("Peer response: $decodedData")
         complete = decodedData.complete ?: 0
         incomplete = decodedData.incomplete ?: 0
         seeds = decodedData.peers.toNetDestinations()

@@ -53,6 +53,11 @@ class Util {
         return new String(chars)
     }
 
+    static def randomNums(int length) {
+        def random = new Random()
+        (0..<length).collect {random.nextInt(10)}.join("")
+    }
+
     static def twoBytesToInt(byte[] b) {
         return ((b[0] & 0xFF) << 8) + (b[1] & 0xFF)
     }

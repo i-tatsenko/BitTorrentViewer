@@ -1,32 +1,39 @@
 package cf.docent.bittorrent.protocol.peer
 
-import cf.docent.bittorrent.Torrent
-import cf.docent.bittorrent.conf.Configuration
+import cf.docent.bittorrent.protocol.NetDestination
+import cf.docent.bittorrent.protocol.PeerMessageDispatcher
+import cf.docent.bittorrent.protocol.peer.message.ChokeMessage
+import cf.docent.bittorrent.protocol.peer.message.UnchokeMessage
 import io.netty.util.internal.ConcurrentSet
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-class PeerManager implements PeerStatusListener {
+import java.util.function.Supplier
+
+class PeerManager implements PeerStatusListener, PeerMessageHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(PeerManager)
 
-    Set<Peer> connectedPeers = new ConcurrentSet<>()
-    Set<Peer> failedPeers = new ConcurrentSet<>()
-    Set<Peer> disconnectedPeers = new ConcurrentSet<>()
+    final Set<Peer> connectedPeers = new ConcurrentSet<>()
+    final Set<Peer> chockedPeers = new ConcurrentSet<>()
+    final Set<Peer> failedPeers = new ConcurrentSet<>()
+    final Set<Peer> disconnectedPeers = new ConcurrentSet<>()
     byte[] peerId
     byte[] infoHash
-    private Torrent torrent
+    private Supplier<Collection<NetDestination>> seedsProvider
+    private PeerMessageDispatcher peerMessageDispatcher
 
-    public PeerManager(Configuration configuration, Torrent torrent) {
-        this.torrent = torrent
-        peerId = configuration.peerId.bytes
-        infoHash = torrent.infoHash()
+    public PeerManager(byte[] peerId, byte[] infoHash, Supplier<Collection<NetDestination>> seedsProvider, PeerMessageDispatcher peerMessageDispatcher) {
+        this.peerMessageDispatcher = peerMessageDispatcher
+        this.seedsProvider = seedsProvider
+        this.peerId = peerId
+        this.infoHash = infoHash
     }
 
     def connectPeers() {
-        torrent.seeds
+        seedsProvider.get()
                 .findAll { !connectedPeers.contains(it) }
-                .forEach { Peer.connect(it, this) }
+                .forEach { Peer.connect(it, this, peerMessageDispatcher) }
     }
 
     @Override
@@ -44,5 +51,40 @@ class PeerManager implements PeerStatusListener {
             connectedPeers.remove(peer)
             failedPeers << peer
         }
+    }
+
+    def List<Peer> getAllConnectePeers() {
+        def peers = new ArrayList<Peer>(connectedPeers)
+        peers.addAll(chockedPeers)
+        return peers
+    }
+
+    private void chokePeer(Peer peer) {
+        synchronized (chockedPeers) {
+            connectedPeers.remove(peer)
+            chockedPeers << peer
+        }
+    }
+
+    private void unChokePeer(Peer peer) {
+        synchronized (chockedPeers) {
+            connectedPeers << peer
+            chockedPeers.remove(peer)
+        }
+    }
+
+    @Override
+    void onMessage(Peer peer, PeerMessage message) {
+        if (message instanceof ChokeMessage) {
+            chokePeer(peer)
+        }
+        else if (message instanceof UnchokeMessage) {
+            unChokePeer(peer)
+        }
+    }
+
+    @Override
+    Set<Class> getHandledPeerMessages() {
+        return [ChokeMessage, UnchokeMessage]
     }
 }

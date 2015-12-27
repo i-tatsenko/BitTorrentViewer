@@ -1,5 +1,6 @@
 package cf.docent.bittorrent
 
+import cf.docent.bittorrent.data.Piece
 import cf.docent.bittorrent.protocol.bencode.BString
 import cf.docent.bittorrent.protocol.bencode.BencodeDecoder
 import cf.docent.bittorrent.protocol.Announce
@@ -13,11 +14,13 @@ import groovy.transform.PackageScope
 @PackageScope
 class TorrentData {
 
-    private static final int PIECE_HASH_BYTES_LENGTH = 20
+    public static final int PIECE_HASH_BYTES_LENGTH = 20
     def decodedData
+    long pieceLength
 
     TorrentData(File file, BencodeDecoder bencodeDecoder) {
         decodedData = bencodeDecoder.decode(file)
+        pieceLength = decodedData.info.'piece length'
     }
 
     Announce getAnnounce() {
@@ -29,10 +32,6 @@ class TorrentData {
 
     def getName() {
         return decodedData.name
-    }
-
-    def pieceLength() {
-        return decodedData.info.'piece length'
     }
 
     def getInfo() {
@@ -51,12 +50,13 @@ class TorrentData {
         torrentFiles.collect({it.size}).sum()
     }
 
-    def List<byte[]> pieces(){
+    def List<Piece> getPieces(){
         BString pieces = decodedData.info.pieces
         byte[] piecesData = pieces.bytes
         def result = []
         for (int i = 0; i < piecesData.length / PIECE_HASH_BYTES_LENGTH; i++) {
-            result << Arrays.copyOfRange(piecesData, i * PIECE_HASH_BYTES_LENGTH, (i + 1) * PIECE_HASH_BYTES_LENGTH)
+            byte[] pieceHash = Arrays.copyOfRange(piecesData, i * PIECE_HASH_BYTES_LENGTH, (i + 1) * PIECE_HASH_BYTES_LENGTH)
+            result << new Piece(i, pieceLength, pieceHash)
         }
         return result
     }

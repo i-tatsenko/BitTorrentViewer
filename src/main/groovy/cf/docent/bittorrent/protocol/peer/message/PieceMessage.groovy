@@ -17,7 +17,7 @@ class PieceMessage implements PeerMessage {
         return readInt(1)
     }
 
-    def data() {
+    byte[] data() {
         return Arrays.copyOfRange(bytes, 16, bytes.length)
     }
 

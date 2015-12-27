@@ -24,7 +24,8 @@ trait PeerMessage {
         result.putInt(messageBytes.length + 1)
         result.put(messageId)
         result.put(messageBytes)
-        result.array()
+        def array = result.array()
+        return array
     }
 
     @Override

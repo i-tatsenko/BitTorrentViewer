@@ -14,11 +14,13 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
+import java.util.function.Consumer
+
 @PackageScope
-class PeerConnection implements PeerMessageListener {
+class PeerConnection {
 
     private static final Logger LOGGER = LogManager.getLogger(PeerConnection)
-    private PeerMessageListener peerMessageListener
+    private Consumer<PeerMessage> peerMessageListener
 
     final NetDestination destination
     volatile ConnectionStatus connectionStatus = ConnectionStatus.CONNECTING
@@ -31,9 +33,9 @@ class PeerConnection implements PeerMessageListener {
         this.destination = netDestination
     }
 
-    public static PeerConnection connect(NetDestination netDestination, PeerConnectionStatusListener connectionEventListener, PeerMessageListener peerMessageListener) {
+    public static PeerConnection connect(NetDestination netDestination, PeerConnectionStatusListener connectionEventListener, Consumer<PeerMessage> peerMessageConsumer) {
         def connection = new PeerConnection(netDestination, connectionEventListener)
-        connection.peerMessageListener = peerMessageListener
+        connection.peerMessageListener = peerMessageConsumer
         connection.connectToPeer()
         return connection
     }
@@ -50,7 +52,7 @@ class PeerConnection implements PeerMessageListener {
 
         def channelFuture = bootstrap.connect(destination.address, destination.port)
         def pipeline = channelFuture.channel().pipeline()
-        pipeline.addLast(new PeerMessageOutboundHandler(), new PeerMessageDecoder(new PeerMessageFactory()), new PeerMessageInboundHandler(messageListener: this))
+        pipeline.addLast(new PeerMessageOutboundHandler(), new PeerMessageDecoder(new PeerMessageFactory()), new PeerMessageInboundHandler(messageListener: peerMessageListener))
 
         channelFuture.addListener { connectionFuture ->
             if (connectionFuture.success) {
@@ -67,7 +69,7 @@ class PeerConnection implements PeerMessageListener {
     }
 
     private def processFailedConnection(Throwable cause) {
-        LOGGER.debug("Can't connect to $destination due to ${cause.message}")
+//        LOGGER.debug("Can't connect to $destination due to ${cause.message}")
         changeConnectionStatus(ConnectionStatus.CONNECTION_FAILED)
         closeSilently()
     }
@@ -91,10 +93,5 @@ class PeerConnection implements PeerMessageListener {
     @Override
     String toString() {
         return "Seed connection:{$destination status: $connectionStatus}"
-    }
-
-    @Override
-    def onMessage(PeerMessage peerMessage) {
-        peerMessageListener.onMessage(peerMessage)
     }
 }
