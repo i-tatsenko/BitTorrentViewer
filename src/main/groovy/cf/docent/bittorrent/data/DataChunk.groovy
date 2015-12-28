@@ -1,8 +1,5 @@
 package cf.docent.bittorrent.data
 
-/**
- * Created by docent on 08.12.15.
- */
 class DataChunk {
 
     final Piece piece

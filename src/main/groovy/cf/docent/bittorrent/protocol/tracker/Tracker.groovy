@@ -10,9 +10,6 @@ import org.apache.commons.codec.net.URLCodec
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-/**
- * Created by docent on 19.11.15.
- */
 class Tracker {
 
     private static final Logger LOGGER = LogManager.getLogger(Tracker)
@@ -33,7 +30,7 @@ class Tracker {
             try {
                 return requestPeers(announceUrl, torrentData)
             } catch (Exception e) {
-                LOGGER.error("Some error while obtaining peer list", e)
+                LOGGER.error("Some error while obtaining peer list. " + e.message)
                 announceUrl = torrentData.announce.getNextAnnounce(announceUrl)
                 if (announceUrl == null) {
                     throw new IllegalArgumentException("Can't send request to tracker")
