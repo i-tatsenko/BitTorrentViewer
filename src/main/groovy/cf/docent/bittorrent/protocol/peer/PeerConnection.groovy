@@ -80,7 +80,8 @@ class PeerConnection {
         connectionEventListener?.statusChanged(old, newStatus, this)
     }
 
-    def close() {
+    def close(Throwable t) {
+        LOGGER.debug("Closing connection to $destination", t)
         changeConnectionStatus(ConnectionStatus.DISCONNECTED)
         closeSilently()
     }

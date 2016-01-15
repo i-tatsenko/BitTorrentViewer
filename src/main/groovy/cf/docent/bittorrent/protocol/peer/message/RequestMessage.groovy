@@ -4,9 +4,6 @@ import cf.docent.bittorrent.protocol.peer.PeerMessage
 
 import java.nio.ByteBuffer
 
-/**
- * Created by docent on 05.12.15.
- */
 class RequestMessage implements PeerMessage {
 
     byte[] bytes

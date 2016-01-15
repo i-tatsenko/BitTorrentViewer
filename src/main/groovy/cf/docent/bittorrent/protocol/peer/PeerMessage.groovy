@@ -30,6 +30,6 @@ trait PeerMessage {
 
     @Override
     String toString() {
-        "${getClass().simpleName} bytes: [${messageBytes.encodeHex()}]"
+        "${getClass().simpleName} bytes count: [${messageBytes.length}]"
     }
 }

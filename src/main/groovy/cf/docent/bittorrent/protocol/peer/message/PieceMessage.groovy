@@ -9,7 +9,7 @@ class PieceMessage implements PeerMessage {
 
     byte[] bytes
 
-    def pieceIndex() {
+    long pieceIndex() {
         return readFirstInt()
     }
 

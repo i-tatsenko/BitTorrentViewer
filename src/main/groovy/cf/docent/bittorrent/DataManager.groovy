@@ -11,23 +11,32 @@ import cf.docent.bittorrent.protocol.peer.message.InterestedMessage
 import cf.docent.bittorrent.protocol.peer.message.PieceMessage
 import cf.docent.bittorrent.protocol.peer.message.RequestMessage
 import cf.docent.bittorrent.protocol.peer.message.UnchokeMessage
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 
 import java.time.LocalTime
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicLong
 
 import static cf.docent.bittorrent.conf.Configuration.DEFAULT_DATA_REQUEST_SIZE
-/**
- * Created by docent on 08.12.15.
- */
+
 class DataManager implements PeerMessageHandler {
+
+    private static Logger LOGGER = LogManager.getLogger(DataManager)
+    private static final int PEER_REQUEST_QUEUE_SIZE = 10
+
 
     final long piecesCount
     final long pieceLength
     Map<Peer, PieceAvailability> dataAvailability = new ConcurrentHashMap<Peer, PieceAvailability>()
 
     Map<Long, PieceAwaiting> processingPieces = new ConcurrentHashMap<>()
+    Queue<ChunkRequest> pendingRequests = new ArrayBlockingQueue<>(100_000)
+    ArrayBlockingQueue<ChunkRequest> sentRequests = new ArrayBlockingQueue<>(100_000)
+
     private PeerManager peerManager
 
     DataManager(long piecesCount, long pieceLength, PeerManager peerManager, PeerMessageDispatcher messageDispatcher) {
@@ -44,88 +53,99 @@ class DataManager implements PeerMessageHandler {
     Future<byte[]> getPiece(Piece piece) {
         int pieceLengthLeft = piece.pieceLength
         int offset = 0
-        def chunkRequests = []
-        peerManager.allConnectePeers.each {
+        long chunksCount = 0
+        peerManager.connectedPeers.each {
             it.sendMessage(new UnchokeMessage())
             it.sendMessage(new InterestedMessage())
         }
         while (pieceLengthLeft > 0) {
+            chunksCount++
             int newChunkLength = pieceLengthLeft
             if (pieceLengthLeft >= DEFAULT_DATA_REQUEST_SIZE) {
                 newChunkLength = DEFAULT_DATA_REQUEST_SIZE
             }
-            chunkRequests << new ChunkRequest(chunk: new DataChunk(piece, offset, newChunkLength), requestSentTime: LocalTime.now())
+            pendingRequests << new ChunkRequest(chunk: new DataChunk(piece, offset, newChunkLength), requestSentTime: LocalTime.now())
             offset += newChunkLength
             pieceLengthLeft -= newChunkLength
         }
-        def future = new CompletableFuture<byte[]>()
-        def awaiting = new PieceAwaiting(promise: future, chunks: chunkRequests)
+        def awaiting = new PieceAwaiting(chunksCount, piece.pieceLength)
         processingPieces.put piece.index, awaiting
 
-        sendRequestsToPeers peerManager.allConnectePeers.findAll {dataAvailability.get(it)?.isPieceAvailable(piece.index)}, chunkRequests
-        return future
+        sendRequestsToPeers peerManager.connectedPeers.findAll {
+            dataAvailability.get(it)?.isPieceAvailable(piece.index)
+        }, PEER_REQUEST_QUEUE_SIZE as int
+        return awaiting.promise
     }
 
-    def static sendRequestsToPeers(Collection<Peer> peers, Collection<ChunkRequest> requests) {
-        List<ChunkRequest> requestsLeft = new ArrayList<>(requests)
-        int requestsPerPeer = requests.size() / peers.size()
+    def sendRequestsToPeers(Collection<Peer> peers, int size) {
         peers.each { peer ->
-            (1..requestsPerPeer).each {
-                if (requestsLeft.isEmpty()) {
-                    return
+            List<ChunkRequest> requests = []
+            (1..size).each {
+                def req = getNextRequest()
+                if (req != null) {
+                    requests << req
                 }
-                ChunkRequest request = requestsLeft.remove(0)
-                peer.sendMessage new RequestMessage(request.chunk.piece.index, request.chunk.offset, request.chunk.length)
+            }
+            requests.each {
+                peer.sendMessage(new RequestMessage(it.chunk.piece.index, it.chunk.offset, it.chunk.length))
             }
         }
     }
 
-    void markPieceAvailable(Peer peer, int pieceIndex) {
-        if (!(0..<pieceIndex).contains(pieceIndex)) {
-            throw new IllegalArgumentException("Invalid piece index: $pieceIndex. Pieces count: $piecesCount")
+    private synchronized ChunkRequest getNextRequest() {
+        def result = pendingRequests.poll()
+        if (!result) {
+            result = sentRequests.poll()
         }
-
-        PieceAvailability pieceAvailability = dataAvailability.get(peer)
-        if (pieceAvailability == null) {
-            pieceAvailability = new PieceAvailability(new byte[piecesCount])
-            dataAvailability.putIfAbsent(peer, pieceAvailability)
-            markPieceAvailable(peer, pieceIndex)
-        } else {
-            pieceAvailability.markPieceAvailable(pieceIndex)
+        if(result) {
+            sentRequests.add(result)
         }
+        return result
     }
+
 
     @Override
     void onMessage(Peer peer, PeerMessage message) {
-        PieceMessage pieceMessage = message
-        def pa = processingPieces.get(pieceMessage.pieceIndex())
-        if (pa == null) {
-            return
+        if (message instanceof PieceMessage) {
+            PieceMessage pieceMessage = message as PieceMessage
+            def pa = processingPieces.get(pieceMessage.pieceIndex())
+            if (pa == null) {
+                LOGGER.debug("No pa for chunk with index ${pieceMessage.pieceIndex()}")
+                return
+            }
+            if (pa.completeChunk(pieceMessage.offset(), pieceMessage.data())) {
+                processingPieces.remove(pieceMessage.pieceIndex())
+            }
+            sendRequestsToPeers([peer], 1)
+
         }
-        if (pa.completeChunk(pieceMessage.offset(), pieceMessage.data())) {
-            processingPieces.remove(pieceMessage.pieceIndex())
+        if (message instanceof UnchokeMessage) {
+            sendRequestsToPeers([peer], PEER_REQUEST_QUEUE_SIZE)
         }
     }
 
     @Override
     Set<Class> getHandledPeerMessages() {
-        return [PieceMessage]
+        return [PieceMessage, UnchokeMessage]
     }
 }
 
 class PieceAwaiting {
-    CompletableFuture<byte[]> promise
-    Set<ChunkRequest> chunks
-    byte[] data
+    final CompletableFuture<byte[]> promise = new CompletableFuture<>()
+    final AtomicLong chunksCount
+    final byte[] data
+
+    public PieceAwaiting(long chunksCount, long size) {
+        data = new byte[size]
+        this.chunksCount = new AtomicLong(chunksCount)
+    }
 
     def boolean completeChunk(int offset, byte[] data) {
-        def readyChunk = chunks.find { it.chunk.offset }
-        synchronized (chunks) {
-            chunks.remove(readyChunk)
-        }
-        System.arraycopy(data, 0, this.data, offset, (int) readyChunk.chunk.length)
-        if (chunks.isEmpty()) {
-            promise.complete(data)
+        def chunksLeft = chunksCount.decrementAndGet()
+        println "Received chunk, left: ${chunksLeft}"
+        System.arraycopy(data, 0, this.data, offset, (int) data.length)
+        if (chunksCount.get() == 0) {
+            promise.complete(this.data)
         }
         return promise.done
     }

@@ -5,9 +5,6 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.socket.SocketChannel
 
-/**
- * Created by docent on 21.11.15.
- */
 class SimpleExceptionChannelHandler extends ChannelInitializer<SocketChannel> {
 
     final Closure fatalExceptionHandler

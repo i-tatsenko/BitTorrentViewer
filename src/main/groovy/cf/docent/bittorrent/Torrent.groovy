@@ -42,7 +42,12 @@ class Torrent {
     }
 
     byte[] getFileData(TorrentFile torrentFile) {
-        return dataManager.getPiece(torrentFile.dataChunks.get(0).piece).get()
+        List<byte[]> bytes = (0..50).collect({ dataManager.getPiece(torrentFile.dataChunks.get(it).piece) })
+                .collect({ it.get() })
+        int resultLength = bytes.inject 0, {s, v -> s + v.length}
+        byte[] result = new byte[resultLength]
+        bytes.eachWithIndex { byte[] data, i -> System.arraycopy(data, 0, result, data.length * i, data.length) }
+        return result
     }
 
     private List<NetDestination> getSeeds() {
