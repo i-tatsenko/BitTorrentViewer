@@ -2,9 +2,6 @@ package cf.docent.bittorrent.protocol.peer.message
 
 import cf.docent.bittorrent.protocol.peer.PeerMessage
 
-/**
- * Created by docent on 04.12.15.
- */
 class PieceMessage implements PeerMessage {
 
     byte[] bytes
@@ -18,7 +15,11 @@ class PieceMessage implements PeerMessage {
     }
 
     byte[] data() {
-        return Arrays.copyOfRange(bytes, 16, bytes.length)
+        return Arrays.copyOfRange(bytes, 8, bytes.length)
+    }
+
+    int getDataLength() {
+        return bytes.length - 8
     }
 
     @Override

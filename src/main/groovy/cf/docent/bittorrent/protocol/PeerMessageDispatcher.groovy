@@ -20,7 +20,7 @@ class PeerMessageDispatcher {
     }
 
     def registerMessage(Peer peer, PeerMessage peerMessage) {
-        LOGGER.debug("Received message from ${peer.destination} message: $peerMessage")
+        if (peerMessage.needeToPrintToLog) LOGGER.debug("Received message from ${peer.destination} message: $peerMessage")
         getListeners(peerMessage.class).each { it.onMessage(peer, peerMessage) }
 
     }

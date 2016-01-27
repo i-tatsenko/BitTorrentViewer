@@ -3,9 +3,6 @@ package cf.docent.bittorrent
 import cf.docent.bittorrent.data.DataChunk
 import cf.docent.bittorrent.data.Piece
 
-/**
- * Created by docent on 17.11.15.
- */
 class TorrentFile {
 
     long size

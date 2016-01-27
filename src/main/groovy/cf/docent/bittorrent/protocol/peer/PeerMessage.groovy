@@ -2,14 +2,15 @@ package cf.docent.bittorrent.protocol.peer
 
 import java.nio.ByteBuffer
 
-/**
- * Created by docent on 22.11.15.
- */
 trait PeerMessage {
 
     abstract byte[] getMessageBytes()
 
     abstract byte getMessageId()
+
+    boolean isNeedeToPrintToLog() {
+        return false
+    }
 
     int readFirstInt() {
         readInt(0)

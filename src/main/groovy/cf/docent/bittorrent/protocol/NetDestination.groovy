@@ -3,9 +3,7 @@ import cf.docent.bittorrent.Util
 import groovy.transform.EqualsAndHashCode
 
 import static cf.docent.bittorrent.Util.subAndTransform
-/**
- * Created by docent on 19.11.15.
- */
+
 @EqualsAndHashCode
 class NetDestination {
 

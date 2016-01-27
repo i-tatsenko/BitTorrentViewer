@@ -35,6 +35,8 @@ class Peer implements PeerConnectionStatusListener {
         statusListener.statusChanged this, old, newStatus
     }
 
-
-
+    @Override
+    String toString() {
+        peerConnection.destination.toString()
+    }
 }

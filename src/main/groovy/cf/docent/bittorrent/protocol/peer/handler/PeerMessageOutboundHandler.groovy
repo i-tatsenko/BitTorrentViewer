@@ -22,6 +22,6 @@ class PeerMessageOutboundHandler extends ChannelOutboundHandlerAdapter {
         ByteBuf byteBuf = ctx.alloc().buffer(serializedMessage.length)
         byteBuf.writeBytes(serializedMessage)
         ctx.writeAndFlush(byteBuf, promise)
-        LOGGER.debug("Sending $serializedMessage to peer")
+        if (msg.needeToPrintToLog) LOGGER.debug("Sending $serializedMessage to peer")
     }
 }

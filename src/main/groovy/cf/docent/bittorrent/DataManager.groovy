@@ -3,6 +3,8 @@ import cf.docent.bittorrent.data.DataChunk
 import cf.docent.bittorrent.data.Piece
 import cf.docent.bittorrent.data.PieceAvailability
 import cf.docent.bittorrent.protocol.PeerMessageDispatcher
+import cf.docent.bittorrent.protocol.download.ChunkRequest
+import cf.docent.bittorrent.protocol.download.PieceAwaiting
 import cf.docent.bittorrent.protocol.peer.Peer
 import cf.docent.bittorrent.protocol.peer.PeerManager
 import cf.docent.bittorrent.protocol.peer.PeerMessage
@@ -16,10 +18,8 @@ import org.apache.logging.log4j.Logger
 
 import java.time.LocalTime
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicLong
 
 import static cf.docent.bittorrent.conf.Configuration.DEFAULT_DATA_REQUEST_SIZE
 
@@ -130,28 +130,4 @@ class DataManager implements PeerMessageHandler {
     }
 }
 
-class PieceAwaiting {
-    final CompletableFuture<byte[]> promise = new CompletableFuture<>()
-    final AtomicLong chunksCount
-    final byte[] data
 
-    public PieceAwaiting(long chunksCount, long size) {
-        data = new byte[size]
-        this.chunksCount = new AtomicLong(chunksCount)
-    }
-
-    def boolean completeChunk(int offset, byte[] data) {
-        def chunksLeft = chunksCount.decrementAndGet()
-        println "Received chunk, left: ${chunksLeft}"
-        System.arraycopy(data, 0, this.data, offset, (int) data.length)
-        if (chunksCount.get() == 0) {
-            promise.complete(this.data)
-        }
-        return promise.done
-    }
-}
-
-class ChunkRequest {
-    DataChunk chunk
-    LocalTime requestSentTime
-}

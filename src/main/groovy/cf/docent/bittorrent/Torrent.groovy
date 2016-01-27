@@ -2,15 +2,14 @@ package cf.docent.bittorrent
 import cf.docent.bittorrent.protocol.NetDestination
 import cf.docent.bittorrent.protocol.PeerMessageDispatcher
 import cf.docent.bittorrent.protocol.bencode.SimpleBencodeDecoder
-import cf.docent.bittorrent.protocol.handlers.BitFieldMessageHandler
+import cf.docent.bittorrent.protocol.download.DownloadManager
 import cf.docent.bittorrent.protocol.peer.PeerManager
 import cf.docent.bittorrent.protocol.tracker.PeerResponse
 import cf.docent.bittorrent.protocol.tracker.Tracker
 
+import javax.sql.DataSource
 import java.time.LocalTime
-/**
- * Created by docent on 16.11.15.
- */
+
 class Torrent {
 
     TorrentData torrentData
@@ -18,13 +17,15 @@ class Torrent {
     byte[] peerId
     private Tracker tracker
     private PeerManager peerManager
-    private DataManager dataManager
+    private DownloadManager downloadManager
+    private DataSource dataSource
     private PeerMessageDispatcher peerMessageDispatcher = new PeerMessageDispatcher()
 
-    Torrent(File torrentMetaFile, Tracker tracker, byte[] peerId) {
+    Torrent(File torrentMetaFile, Tracker tracker, byte[] peerId, DataSource dataSource) {
         this.tracker = tracker
         torrentData = new TorrentData(torrentMetaFile, new SimpleBencodeDecoder())
         this.peerId = peerId
+        this.dataSource = dataSource
     }
 
     List<TorrentFile> listTorrentFiles() {
@@ -36,13 +37,11 @@ class Torrent {
             peerManager = new PeerManager(peerId, torrentData.infoHash, this.&getSeeds, peerMessageDispatcher)
         }
         peerManager.connectPeers()
-        dataManager = new DataManager(torrentData.pieces.size(), torrentData.pieceLength, peerManager, peerMessageDispatcher)
-        peerMessageDispatcher.addListener(new BitFieldMessageHandler(dataManager))
-
+        downloadManager = new DownloadManager(peerManager, dataSource, peerMessageDispatcher, torrentData.pieces.size())
     }
 
     byte[] getFileData(TorrentFile torrentFile) {
-        List<byte[]> bytes = (0..50).collect({ dataManager.getPiece(torrentFile.dataChunks.get(it).piece) })
+        List<byte[]> bytes = (0..50).collect({ downloadManager.downloadPiece(torrentFile.dataChunks.get(it).piece) })
                 .collect({ it.get() })
         int resultLength = bytes.inject 0, {s, v -> s + v.length}
         byte[] result = new byte[resultLength]
